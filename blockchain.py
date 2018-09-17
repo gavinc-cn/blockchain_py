@@ -17,6 +17,7 @@ from time import time, sleep
 from urllib.parse import urlparse
 from uuid import uuid4
 
+import requests
 from flask import Flask, jsonify, request
 
 
@@ -35,6 +36,53 @@ class Blockchain:
         # urlparse解析地址
         parsed_url = urlparse(address)
         self.nodes.add(parsed_url.netloc)
+
+    def valid_chain(self,chain) -> bool:
+
+        #取链条的第一个区块
+        last_block = chain[0]
+        #取链条的第一个区块
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+
+            if block['previous_hash']!=self.hash(last_block):
+                return False
+
+            if not self.valid_proof(last_block['proof'],block['proof']):
+                return False
+
+            last_block = block
+            current_index += 1
+
+        return True
+
+
+
+    def resolve_conflicts(self) -> bool:
+        neighbours = self.nodes
+
+        max_length = len(self.chain)
+        new_chain = None
+
+        for node in neighbours:
+            response = requests.get(f'http://{node}/chain')
+            if response.status_code == 200:
+                #response.json()把response从string转换成json格式
+                length = response.json()['length']
+                chain = response.json()['chain']
+
+                if length > max_length and self.valid_chain(chain):
+                    max_length = length
+                    new_chain = chain
+
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
 
     def new_block(self, proof, previous_hash = None):
         block = {
@@ -83,9 +131,6 @@ class Blockchain:
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[0:4] == "0000"
-
-# testPow = Blockchain()
-# testPow.proof_of_work(100)
 
 
 
