@@ -235,10 +235,13 @@ def consensus():
 if __name__=='__main__':
 
     parser = ArgumentParser()
+    print('test=',parser)
     # -p --port 5001
     parser.add_argument('-p', '--port',default=5000,type=int,help='port to listen to')
     args = parser.parse_args()
+    print('test=',args)
     port = args.port
+    print('test=',port)
 
     app.run(host='0.0.0.0',port=port)
 
