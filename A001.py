@@ -1,5 +1,7 @@
-from uuid import uuid4
 
-node_identifier = str(uuid4())
 
-print(node_identifier)
+values = {"nodes":["http://127.0.0.2:5000"]}
+
+nodes = values.get("nodes")
+
+print(nodes)

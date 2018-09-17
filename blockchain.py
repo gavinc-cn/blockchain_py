@@ -14,6 +14,7 @@
 import hashlib
 import json
 from time import time, sleep
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
@@ -24,8 +25,16 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.current_transactions = []
+        # set里面的元素没有重复项
+        self.nodes = set()
 
         self.new_block(proof=100, previous_hash = 1)
+
+    def register_node(self, address:str):
+        # http://127.0.0.1:5001
+        # urlparse解析地址
+        parsed_url = urlparse(address)
+        self.nodes.add(parsed_url.netloc)
 
     def new_block(self, proof, previous_hash = None):
         block = {
@@ -138,6 +147,26 @@ def full_chain():
     }
     # Flask中可以使用jsonify把jsonify变成字符串
     return jsonify(response),200
+
+
+# {"nodes":["http://127.0.0.2:5000"]}
+@app.route('/nodes/register',methods=['POST'])
+def register_nodes():
+    # 获取请求内容
+    values = request.get_json()
+    nodes = values.get("nodes")
+    if nodes is None:
+        return "Error:please supply a valid list of nodes",400
+
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response = {
+        "message":"New nodes have been added",
+        "total_nodes":list(blockchain.nodes)
+    }
+
+    return jsonify(response),201
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=5000)
